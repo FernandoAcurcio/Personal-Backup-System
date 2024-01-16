@@ -1,7 +1,4 @@
-﻿using System.Windows;
-using System.Windows.Forms;
-
-namespace Personal_Backup_System.Controllers
+﻿namespace Personal_Backup_System.Controllers
 {
     public static class FolderController
     {
@@ -17,6 +14,5 @@ namespace Personal_Backup_System.Controllers
             }
             return folderPath;
         }
-
     }
 }

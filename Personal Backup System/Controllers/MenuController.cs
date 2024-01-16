@@ -1,11 +1,4 @@
 ﻿using Personal_Backup_System.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-
 
 namespace Personal_Backup_System.Controllers
 {
@@ -44,7 +37,7 @@ namespace Personal_Backup_System.Controllers
                         else if (result == 5) UserDataHandler.SaveUserDataToJson(UserData, _jsonName); 
                         break;
                     case 2:
-                        menuSelector--;
+                        SynchronizeController.Synchronize();
                         break;
                 }
             } while (result != 0);
