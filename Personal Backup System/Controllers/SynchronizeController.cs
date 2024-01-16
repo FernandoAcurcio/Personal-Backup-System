@@ -8,16 +8,16 @@ namespace Personal_Backup_System.Controllers
 {
     public static class SynchronizeController
     {
-        public static void Synchronize()
+        public static void Synchronize(string sourcePath, string destinationPath)
         {
-            var sourcePath = MenuController.UserData.SourcePath;
-            var destinationPath = MenuController.UserData.DestinationPath;
+            // Create the destination directory if it doesn't exist
+            Directory.CreateDirectory(destinationPath);
 
             string[] sourceFiles = Directory.GetFiles(sourcePath);
             string[] destinationFiles = Directory.GetFiles(destinationPath);
 
-            Console.WriteLine("");
-            // Copy or replace files from source to replica
+            
+            // copy or replace files from source to destination
             foreach (string sourceFile in sourceFiles)
             {
                 string fileName = Path.GetFileName(sourceFile);
@@ -30,18 +30,13 @@ namespace Personal_Backup_System.Controllers
                 }
             }
 
-            // Delete extra files in replica
-            //foreach (string destinationFile in destinationFiles)
-            //{
-            //    string fileName = Path.GetFileName(destinationFile);
-            //    string sourceFile = Path.Combine(sourcePath, fileName);
-
-            //    if (!File.Exists(sourceFile))
-            //    {
-            //        File.Delete(destinationFile);
-            //        Console.WriteLine($"Deleted file {fileName}");
-            //    }
-            //}
+            // recursively synchronize each subdirectory
+            string[] sourceDirectories = Directory.GetDirectories(sourcePath);
+            foreach (string sourceDir in sourceDirectories)
+            {
+                string dirName = Path.GetFileName(sourceDir);
+                Synchronize(sourceDir, Path.Combine(destinationPath, dirName));
+            }
         }
 
     }

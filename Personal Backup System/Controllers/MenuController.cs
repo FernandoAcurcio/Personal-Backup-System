@@ -37,7 +37,7 @@ namespace Personal_Backup_System.Controllers
                         else if (result == 5) UserDataHandler.SaveUserDataToJson(UserData, _jsonName); 
                         break;
                     case 2:
-                        SynchronizeController.Synchronize();
+                        SynchronizeController.Synchronize(MenuController.UserData.SourcePath, MenuController.UserData.DestinationPath);
                         break;
                 }
             } while (result != 0);
