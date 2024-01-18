@@ -1,48 +1,77 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Personal_Backup_System.Controllers
+﻿namespace Personal_Backup_System.Controllers
 {
     public static class SynchronizeController
     {
-        public static void Synchronize()
+        /// <summary>
+        /// Synchronizes files between source and destination folders, and logs the actions.
+        /// </summary>
+        /// <param name="sourcePath"></param>
+        /// <param name="destinationPath"></param>
+        /// <param name="logFilePath"></param>
+        public static void Synchronize(string sourcePath, string destinationPath, string logFilePath)
         {
-            var sourcePath = MenuController.UserData.SourcePath;
-            var destinationPath = MenuController.UserData.DestinationPath;
+            // Create the destination directory if it doesn't exist
+            Directory.CreateDirectory(destinationPath);
 
             string[] sourceFiles = Directory.GetFiles(sourcePath);
             string[] destinationFiles = Directory.GetFiles(destinationPath);
 
-            Console.WriteLine("");
-            // Copy or replace files from source to replica
             foreach (string sourceFile in sourceFiles)
             {
                 string fileName = Path.GetFileName(sourceFile);
                 string destinationFile = Path.Combine(destinationPath, fileName);
 
-                if (!File.Exists(destinationFile) || File.GetLastWriteTime(sourceFile) > File.GetLastWriteTime(destinationFile))
+                string? sourceHash = CalculateHashController.CalculateMD5Hash(sourceFile);
+                string? destinationHash = File.Exists(destinationFile) ? CalculateHashController.CalculateMD5Hash(destinationFile) : null;
+
+                if (sourceHash == null || destinationHash == null || !sourceHash.Equals(destinationHash))
                 {
-                    File.Copy(sourceFile, destinationFile, true);
-                    Console.WriteLine($"Copied or replaced file {fileName}");
+                    try
+                    {
+                        File.Copy(sourceFile, destinationFile, true);
+                        LogController.Log($"Copied or replaced file {fileName}", logFilePath);
+                    }
+                    catch (IOException ex)
+                    {
+                        LogController.Log($"Could not copy file {fileName}: {ex.Message}", logFilePath);
+                    }
                 }
             }
 
+            // recursively synchronize each subdirectory
+            string[] sourceDirectories = Directory.GetDirectories(sourcePath);
+            foreach (string sourceDir in sourceDirectories)
+            {
+                string dirName = Path.GetFileName(sourceDir);
+                Synchronize(sourceDir, Path.Combine(destinationPath, dirName), logFilePath);
+            }
+
             // Delete extra files in replica
-            //foreach (string destinationFile in destinationFiles)
-            //{
-            //    string fileName = Path.GetFileName(destinationFile);
-            //    string sourceFile = Path.Combine(sourcePath, fileName);
+            foreach (string destinationFile in destinationFiles)
+            {
+                string fileName = Path.GetFileName(destinationFile);
+                string sourceFile = Path.Combine(sourcePath, fileName);
 
-            //    if (!File.Exists(sourceFile))
-            //    {
-            //        File.Delete(destinationFile);
-            //        Console.WriteLine($"Deleted file {fileName}");
-            //    }
-            //}
+                if (!File.Exists(sourceFile))
+                {
+                    File.Delete(destinationFile);
+                    LogController.Log($"Deleted file {fileName}", logFilePath);
+                }
+            }
+
+            // Delete extra directories in replica
+            string[] replicaDirectories = Directory.GetDirectories(destinationPath);
+            foreach (string destinationDir in replicaDirectories)
+            {
+                string dirName = Path.GetFileName(destinationDir);
+                string sourceDir = Path.Combine(sourcePath, dirName);
+
+                if (!Directory.Exists(sourceDir))
+                {
+                    Directory.Delete(destinationDir, true);
+                    LogController.Log($"Deleted directory {dirName}", logFilePath);
+                }
+            }
         }
-
     }
 }

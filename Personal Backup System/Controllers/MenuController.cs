@@ -4,15 +4,13 @@ namespace Personal_Backup_System.Controllers
 {
     public static class MenuController
     {
-        private static string? _jsonName;
         public static UserData? UserData;
 
         public static int MenuHandler()
         {
-            _jsonName = "userData.json";
-
             // load user data
-            var userdata = UserDataHandler.LoadUserDataFromJson(_jsonName);
+            var userdata = UserDataHandler.LoadUserDataFromJson();
+            // check if was retrived any user data
             UserData = userdata != null ? userdata : new UserData();
 
             int menuSelector = 0;
@@ -33,11 +31,11 @@ namespace Personal_Backup_System.Controllers
                         else if (result == 1) UserData.SourcePath = FolderController.OpenFolderBrowser();
                         else if (result == 2) UserData.DestinationPath = FolderController.OpenFolderBrowser();
                         else if (result == 3) UserData.LogPath = FolderController.OpenFolderBrowser();
-                        else if (result == 4) UserData.SyncIntervals = ReadMenu(); 
-                        else if (result == 5) UserDataHandler.SaveUserDataToJson(UserData, _jsonName); 
+                        else if (result == 4) UserData.SyncInterval = ReadMenu(); 
+                        else if (result == 5) UserDataHandler.SaveUserDataToJson(UserData); 
                         break;
                     case 2:
-                        SynchronizeController.Synchronize();
+                        menuSelector = Menu2();
                         break;
                 }
             } while (result != 0);
@@ -45,7 +43,7 @@ namespace Personal_Backup_System.Controllers
             return result;
         }
 
-        public static int Menu0(string header)
+        private static int Menu0(string header)
         {
             Console.WriteLine("*************************************");
             Console.WriteLine($"{header}");
@@ -56,12 +54,10 @@ namespace Personal_Backup_System.Controllers
             Console.WriteLine("2- Sync Folder");
 
             return ReadMenu();
-
         }
 
-
         // Initial Menu
-        public static int Menu1(string header)
+        private static int Menu1(string header)
         {
             Console.WriteLine("*************************************");
             Console.WriteLine($"{header}");
@@ -76,24 +72,40 @@ namespace Personal_Backup_System.Controllers
             Console.WriteLine($"\nSource Folder: {UserData?.SourcePath}");
             Console.WriteLine($"Destination Folder: {UserData?.DestinationPath}");
             Console.WriteLine($"Log Folder: {UserData?.LogPath}");
-            Console.WriteLine($"Intervals: {UserData?.SyncIntervals}");
+            Console.WriteLine($"Intervals: {UserData?.SyncInterval}");
 
             return ReadMenu();
         }
 
-        public static int Menu2(string header) 
+        private static int Menu2() 
         {
-            Console.WriteLine("*************************************");
-            Console.WriteLine($"{header}");
-            Console.WriteLine("*************************************");
-            Console.WriteLine("\nSelect One Of The Following Options");
-            Console.WriteLine("0- Return To Previous Menu");
-            Console.WriteLine("1- Select Folder");
-            
-            return ReadMenu();
+            Console.WriteLine("0- To Return");
+
+            System.Timers.Timer timer = new System.Timers.Timer();
+
+            timer.Interval = UserData.SyncInterval * 1000; // Convert seconds to milliseconds
+            timer.Elapsed += (sender, e) => SynchronizeController.Synchronize(UserData.SourcePath, UserData.DestinationPath, UserData.LogPath);
+            timer.Start();
+
+            int menuSelector;
+            while (true)
+            {
+                if (Console.KeyAvailable)
+                {
+                    // check if the key that was pressed is 0
+                    if (Console.ReadKey(true).Key == ConsoleKey.D0 || Console.ReadKey(true).Key == ConsoleKey.NumPad0)
+                    {
+                        timer.Stop();
+                        menuSelector = 0;
+                        break;
+                    }
+                }
+            }
+            return menuSelector;
         }
 
-        public static int ReadMenu()
+
+        private static int ReadMenu()
         {
             if (!int.TryParse(Console.ReadLine(), out var result))                
             {
